@@ -3,7 +3,7 @@ import urllib2
 import re
 
 username = raw_input("Enter the username: ") #use this is you want to run it locally on your computer
-# computer_name = raw_input("Enter UNC path: ")
+# computer_name = raw_input("Enter UNC path: ") #use this if you want to do this for a remote computer. Must have UNC path open to the endpoint
 
 ext = os.listdir("C:\\Users\\%s\\AppData\\Local\\Google\\Chrome\\User Data\\Default\Extensions" % (username))
 url = 'https://chrome.google.com/webstore/detail/'
