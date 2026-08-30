@@ -4,7 +4,6 @@ Chrome Extension Lookup Tool
 Enumerates installed Chrome extensions and looks up their names on the Chrome Web Store.
 """
 
-import os
 import sys
 import time
 import argparse
@@ -15,15 +14,24 @@ from pathlib import Path
 # Chrome Web Store base URL
 CHROME_WEBSTORE_URL = "https://chromewebstore.google.com/detail/"
 
-def get_chrome_extensions(username: str = None) -> list:
-    """Find all installed Chrome extensions for a user."""
-    if not username:
-        username = os.getlogin()
+def get_chrome_base_path(username: str | None = None) -> Path:
+    """Return the Chrome user data directory for the current platform."""
+    if sys.platform == "win32":
+        home = Path("C:/Users") / username if username else Path.home()
+        return home / "AppData" / "Local" / "Google" / "Chrome" / "User Data"
 
-    chrome_base = Path(f"C:\\Users\\{username}\\AppData\\Local\\Google\\Chrome\\User Data")
+    if sys.platform == "darwin":
+        home = Path("/Users") / username if username else Path.home()
+        return home / "Library" / "Application Support" / "Google" / "Chrome"
+
+    raise RuntimeError(f"Unsupported platform: {sys.platform}")
+
+def get_chrome_extensions(username: str | None = None) -> list[tuple[str, str]]:
+    """Find all installed Chrome extensions for a user."""
+    chrome_base = get_chrome_base_path(username)
 
     if not chrome_base.exists():
-        print(f"❌ Chrome User Data folder not found for user: {username}")
+        print(f"❌ Chrome profile directory not found: {chrome_base}")
         sys.exit(1)
 
     extensions = []
@@ -79,7 +87,7 @@ def lookup_extension_name(ext_id: str, delay: float = 1.0) -> str:
 def main():
     parser = argparse.ArgumentParser(description="Enumerate and lookup Chrome extensions")
     parser.add_argument("-u", "--user", default=None,
-                        help="Windows username (default: current user)")
+                        help="Local username to inspect (default: current user)")
     parser.add_argument("-d", "--delay", type=float, default=1.2,
                         help="Delay between requests in seconds (default: 1.2)")
     args = parser.parse_args()

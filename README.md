@@ -2,6 +2,10 @@
 
 Simple Python script that enumerates installed Chrome extensions and looks up their names in the Chrome Web Store.
 
+Windows: supported
+macOS:   supported
+Linux:   unsupported
+
 ## Requirements
 
 - Python 3.14
