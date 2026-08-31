@@ -1,18 +1,19 @@
-#!/usr/bin/env python3
 """
 Chrome Extension Lookup Tool
 Enumerates installed Chrome extensions and looks up their names on the Chrome Web Store.
 """
 
+import argparse
 import sys
 import time
-import argparse
+from pathlib import Path
+
 import requests
 from bs4 import BeautifulSoup
-from pathlib import Path
 
 # Chrome Web Store base URL
 CHROME_WEBSTORE_URL = "https://chromewebstore.google.com/detail/"
+
 
 def get_chrome_base_path(username: str | None = None) -> Path:
     """Return the Chrome user data directory for the current platform."""
@@ -25,6 +26,7 @@ def get_chrome_base_path(username: str | None = None) -> Path:
         return home / "Library" / "Application Support" / "Google" / "Chrome"
 
     raise RuntimeError(f"Unsupported platform: {sys.platform}")
+
 
 def get_chrome_extensions(username: str | None = None) -> list[tuple[str, str]]:
     """Find all installed Chrome extensions for a user."""
@@ -42,7 +44,7 @@ def get_chrome_extensions(username: str | None = None) -> list[tuple[str, str]]:
         if ext_dir.is_dir():
             print(f"📂 Scanning profile: {profile_dir.name}")
             for ext_id in ext_dir.iterdir():
-                if ext_id.is_dir() and not ext_id.name.startswith('.'):
+                if ext_id.is_dir() and not ext_id.name.startswith("."):
                     extensions.append((profile_dir.name, ext_id.name))
 
     return extensions
@@ -62,12 +64,14 @@ def lookup_extension_name(ext_id: str, delay: float = 1.0) -> str:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
 
         # Try multiple ways to get the title
         title_tag = soup.find("meta", property="og:title")
-        if title_tag and title_tag.get("content"):
-            return title_tag["content"].strip()
+        if title_tag:
+            content = title_tag.get("content")
+            if isinstance(content, str):
+                return content.strip()
 
         # Fallback: look for h1 title
         h1 = soup.find("h1")
@@ -78,18 +82,27 @@ def lookup_extension_name(ext_id: str, delay: float = 1.0) -> str:
 
     except requests.exceptions.RequestException as e:
         return f"Error looking up: {str(e)[:80]}"
-    except Exception:
-        return "Unknown (parsing failed)"
     finally:
         time.sleep(delay)  # Be nice to Google's servers
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Enumerate and lookup Chrome extensions")
-    parser.add_argument("-u", "--user", default=None,
-                        help="Local username to inspect (default: current user)")
-    parser.add_argument("-d", "--delay", type=float, default=1.2,
-                        help="Delay between requests in seconds (default: 1.2)")
+    parser = argparse.ArgumentParser(
+        description="Enumerate and lookup Chrome extensions"
+    )
+    parser.add_argument(
+        "-u",
+        "--user",
+        default=None,
+        help="Local username to inspect (default: current user)",
+    )
+    parser.add_argument(
+        "-d",
+        "--delay",
+        type=float,
+        default=1.2,
+        help="Delay between requests in seconds (default: 1.2)",
+    )
     args = parser.parse_args()
 
     print("🔍 Chrome Extension Lookup Tool")
